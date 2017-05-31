@@ -1,4 +1,5 @@
 var Promise = require('bluebird'),
+    config = require('../config'),
     errors = require('../errors'),
     i18n = require('../i18n'),
     checkTheme;
@@ -9,9 +10,16 @@ checkTheme = function checkTheme(theme, isZip) {
         gscan = require('gscan');
 
     if (isZip) {
-        checkPromise = gscan.checkZip(theme, {keepExtractedDir: true});
+        checkPromise = gscan.checkZip(theme, {
+            keepExtractedDir: true,
+            detectPackageJSONErrors: config.get('env') !== 'production',
+            detectDeprecatedCSSErrors: config.get('env') !== 'production'
+        });
     } else {
-        checkPromise = gscan.check(theme.path);
+        checkPromise = gscan.check(theme.path, {
+            detectPackageJSONErrors: config.get('env') !== 'production',
+            detectDeprecatedCSSErrors: config.get('env') !== 'production'
+        });
     }
 
     return checkPromise.then(function resultHandler(checkedTheme) {
