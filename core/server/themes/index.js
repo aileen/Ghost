@@ -1,5 +1,4 @@
 var debug = require('debug')('ghost:themes'),
-    _ = require('lodash'),
     events = require('../events'),
     errors = require('../errors'),
     logging = require('../logging'),
@@ -65,12 +64,7 @@ module.exports = {
     toJSON: require('./to-json'),
     getActive: active.get,
     activate: function activate(loadedTheme, checkedTheme) {
-        if (!_.has(checkedTheme, 'results.score.level') || checkedTheme.results.score.level !== 'passing') {
-            throw new errors.InternalServerError({
-                message: i18n.t('errors.middleware.themehandler.invalidTheme', {theme: loadedTheme.name})
-            });
-        }
-
+        // no need to check the score, activation should be used in combination with validate.check
         // Use the two theme objects to set the current active theme
         active.set(loadedTheme, checkedTheme);
     },
