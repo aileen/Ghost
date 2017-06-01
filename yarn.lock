@@ -2131,9 +2131,9 @@ grunt@~0.4.0:
     underscore.string "~2.2.1"
     which "~1.0.5"
 
-"gscan@https://github.com/TryGhost/gscan/tarball/4bcd65158ed0375bd5b39ef9643852db0bf329d1":
+"gscan@https://github.com/TryGhost/gscan/tarball/a303f3902f574c7922f04b1ad942eeaf7ec24f61":
   version "1.0.0"
-  resolved "https://github.com/TryGhost/gscan/tarball/4bcd65158ed0375bd5b39ef9643852db0bf329d1#7a0441b305add5a8b6e386a51b95acdaefc8df92"
+  resolved "https://github.com/TryGhost/gscan/tarball/a303f3902f574c7922f04b1ad942eeaf7ec24f61#7afecf67a36e47da6e9a3e5d2f21d7bcb4891aa4"
   dependencies:
     bluebird "3.4.6"
     chalk "1.1.1"
