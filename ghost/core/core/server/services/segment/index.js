@@ -1,4 +1,4 @@
-const Analytics = require('analytics-node');
+const Analytics = require('@segment/analytics-node');
 const config = require('../../../shared/config');
 const sentry = require('../../../shared/sentry');
 const logging = require('@tryghost/logging');
@@ -9,7 +9,7 @@ const ModelEventsAnalytics = require('./ModelEventsAnalytics');
 const DomainEventsAnalytics = require('./DomainEventsAnalytics');
 
 module.exports.init = function () {
-    const analytics = new Analytics(config.get('segment:key'));
+    const analytics = new Analytics({writeKey: config.get('segment:key')});
     const trackDefaults = config.get('segment:trackDefaults') || {};
     const prefix = config.get('segment:prefix') || '';
 
