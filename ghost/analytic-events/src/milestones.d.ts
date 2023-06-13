@@ -1,1 +1,1 @@
-declare module '@tryghost/milestones'
+declare module '@tryghost/milestones';

@@ -1,4 +1,4 @@
-const Analytics = require('@segment/analytics-node');
+const {Analytics} = require('@segment/analytics-node');
 const config = require('../../../shared/config');
 const sentry = require('../../../shared/sentry');
 const logging = require('@tryghost/logging');
@@ -6,7 +6,7 @@ const DomainEvents = require('@tryghost/domain-events');
 const events = require('../../lib/common/events');
 
 const ModelEventsAnalytics = require('./ModelEventsAnalytics');
-const DomainEventsAnalytics = require('./DomainEventsAnalytics');
+const {DomainEventsAnalytics} = require('@tryghost/analytic-events');
 
 module.exports.init = function () {
     const analytics = new Analytics({writeKey: config.get('segment:key')});

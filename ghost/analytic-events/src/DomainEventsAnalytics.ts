@@ -1,25 +1,55 @@
 import {MilestoneCreatedEvent} from '@tryghost/milestones';
 
-interface IExceptionHandler {
+type ExceptionHandler = {
     captureException(err: Error): void;
 }
 
+type Logging = {
+    error(err: Error): void;
+}
+
+type Analytics = {
+    track(eventData: IAnalyticsTrackNode): void;
+}
+
+type IDomainEvents = {
+    subscribe(event: string, callback: (event: IMilestoneEvent) => Promise<void>): void;
+}
+interface ITrackDefaults {
+    userId: string;
+    properties: object;
+}
+
+interface IAnalyticsTrackNode extends ITrackDefaults {
+    event: string;
+}
+
 interface IDomainEventsAnalytics {
-    analytics: AnalyticsNode;
+    analytics: Analytics;
     logging: Logging;
-    trackDefaults: object;
+    trackDefaults: ITrackDefaults;
     prefix: string;
-    exceptionHandler: IExceptionHandler;
-    DomainEvents: DomainEvents;
+    exceptionHandler: ExceptionHandler;
+    DomainEvents: IDomainEvents;
+    subscribeToEvents(): void;
+}
+
+interface IMilestoneEvent {
+    data: {
+        milestone: {
+            value: number;
+            type: string;
+        };
+    }
 }
 
 export class DomainEventsAnalytics {
-    #analytics: AnalyticsNode;
-    #trackDefaults: object;
+    #analytics: Analytics;
+    #trackDefaults: ITrackDefaults;
     #prefix: string;
-    #exceptionHandler: IExceptionHandler;
+    #exceptionHandler: ExceptionHandler;
     #logging: Logging;
-    #DomainEvents: DomainEvents;
+    #DomainEvents: IDomainEvents;
 
     constructor(deps: IDomainEventsAnalytics) {
         this.#analytics = deps.analytics;
@@ -30,22 +60,22 @@ export class DomainEventsAnalytics {
         this.#DomainEvents = deps.DomainEvents;
     }
 
-    private async #handleMilestoneCreatedEvent(event: { data: { milestone: { value: number; type: string } } }) {
-        if (
-            event.data.milestone &&
-            event.data.milestone.value === 100
+    /**
+     * @param {IMilestoneEvent} event
+     * @returns {Promise<void>}
+     */
+    async #handleMilestoneCreatedEvent(event: IMilestoneEvent) {
+        if (event.data.milestone
+            && event.data.milestone.value === 100
         ) {
-            const eventName =
-                event.data.milestone.type === 'arr'
-                    ? '$100 MRR reached'
-                    : '100 Members reached';
-
+            const eventName = event.data.milestone.type === 'arr' ? '$100 MRR reached' : '100 Members reached';
             try {
-                this.#analytics.track({
+                const eventData:IAnalyticsTrackNode = {
                     ...this.#trackDefaults,
-                    event: this.#prefix + eventName
-                });
-            } catch (err) {
+                    event: `${this.#prefix} ${eventName}`
+                };
+                this.#analytics.track(eventData);
+            } catch (err: any) {
                 this.#logging.error(err);
                 this.#exceptionHandler.captureException(err);
             }
