@@ -1,4 +1,6 @@
 import {MilestoneCreatedEvent} from '@tryghost/milestones';
+import {events} from '@tryghost/members-stripe-service';
+const {StripeLiveEnabledEvent, StripeLiveDisabledEvent} = events;
 
 type ExceptionHandler = {
     captureException(err: Error): void;
@@ -13,7 +15,7 @@ type Analytics = {
 }
 
 type IDomainEvents = {
-    subscribe(event: string, callback: (event: IMilestoneEvent) => Promise<void>): void;
+    subscribe(event: string, callback: (event: IMilestoneCreatedEvent) => Promise<void>): void;
 }
 interface ITrackDefaults {
     userId: string;
@@ -24,6 +26,27 @@ interface IAnalyticsTrackNode extends ITrackDefaults {
     event: string;
 }
 
+interface IMilestoneCreatedEvent {
+    data: {
+        milestone: {
+            value: number;
+            type: string;
+        };
+    }
+}
+
+interface IStripeLiveEnabledEvent {
+    data: {
+        message: string;
+    }
+}
+
+interface IStripeLiveDisabledEvent {
+    data: {
+        message: string;
+    }
+}
+
 interface IDomainEventsAnalytics {
     analytics: Analytics;
     logging: Logging;
@@ -32,15 +55,6 @@ interface IDomainEventsAnalytics {
     exceptionHandler: ExceptionHandler;
     DomainEvents: IDomainEvents;
     subscribeToEvents(): void;
-}
-
-interface IMilestoneEvent {
-    data: {
-        milestone: {
-            value: number;
-            type: string;
-        };
-    }
 }
 
 export class DomainEventsAnalytics {
@@ -61,10 +75,10 @@ export class DomainEventsAnalytics {
     }
 
     /**
-     * @param {IMilestoneEvent} event
+     * @param {IMilestoneCreatedEvent} event
      * @returns {Promise<void>}
      */
-    async #handleMilestoneCreatedEvent(event: IMilestoneEvent) {
+    async #handleMilestoneCreatedEvent(event: IMilestoneCreatedEvent) {
         if (event.data.milestone
             && event.data.milestone.value === 100
         ) {
@@ -82,9 +96,32 @@ export class DomainEventsAnalytics {
         }
     }
 
+    /**
+     * @param {StripeLiveEnabledEvent|StripeLiveDisabledEvent} eventType
+     * @returns {Promise<void>}
+     */
+    async #handleStripeEvent(eventType: IStripeLiveEnabledEvent | IStripeLiveDisabledEvent) {
+        const eventName = eventType === StripeLiveDisabledEvent ? 'Stripe Live Disabled' : 'Stripe Live Enabled';
+
+        try {
+            this.#analytics.track(Object.assign(this.#trackDefaults, {}, {event: this.#prefix + eventName}));
+        } catch (err: any) {
+            this.#logging.error(err);
+            this.#exceptionHandler.captureException(err);
+        }
+    }
+
     subscribeToEvents() {
         this.#DomainEvents.subscribe(MilestoneCreatedEvent, async (event) => {
             await this.#handleMilestoneCreatedEvent(event);
+        });
+
+        this.#DomainEvents.subscribe(StripeLiveEnabledEvent, async () => {
+            await this.#handleStripeEvent(StripeLiveEnabledEvent);
+        });
+
+        this.#DomainEvents.subscribe(StripeLiveDisabledEvent, async () => {
+            await this.#handleStripeEvent(StripeLiveDisabledEvent);
         });
     }
 }
