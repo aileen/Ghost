@@ -243,103 +243,106 @@ describe('Members Importer API', function () {
     });
 
     it('Can import members with host emailVerification limits', async function () {
-        // If this test fails, check if the total members that have been created with fixtures has increased a lot, and if required, increase the amount of imported members
-        const {receivedWebhookRequests} = await setupEmailVerificationUtils({
-            apiThreshold: 2,
-            adminThreshold: 2,
-            importThreshold: 1, // note: this one isn't really used because (totalMembers - members_created_in_last_30_days) is larger and used instead
-            persist: true
-        });
+        try {
+            // If this test fails, check if the total members that have been created with fixtures has increased a lot, and if required, increase the amount of imported members
+            const {receivedWebhookRequests} = await setupEmailVerificationUtils({
+                apiThreshold: 2,
+                adminThreshold: 2,
+                importThreshold: 1, // note: this one isn't really used because (totalMembers - members_created_in_last_30_days) is larger and used instead
+                persist: true
+            });
 
-        assert.equal(settingsCache.get('email_verification_required'), false, 'Email verification should not be required');
+            assert.equal(settingsCache.get('email_verification_required'), false, 'Email verification should not be required');
 
-        const awaitCompletion = jobManager.awaitCompletion('members-import');
+            const awaitCompletion = jobManager.awaitCompletion('members-import');
 
-        const res = await request
-            .post(localUtils.API.getApiQuery(`members/upload/`))
-            .field('labels', ['new-global-label'])
-            .attach('membersfile', path.join(__dirname, '/../../../utils/fixtures/csv/valid-members-import-large-501.csv'))
-            .set('Origin', config.get('url'))
-            .expect('Content-Type', /json/)
-            .expect('Cache-Control', testUtils.cacheRules.private)
-            .expect(202);
-        assert.equal(res.headers['x-cache-invalidate'], undefined);
-        const jsonResponse = res.body;
+            const res = await request
+                .post(localUtils.API.getApiQuery(`members/upload/`))
+                .field('labels', ['new-global-label'])
+                .attach('membersfile', path.join(__dirname, '/../../../utils/fixtures/csv/valid-members-import-large-501.csv'))
+                .set('Origin', config.get('url'))
+                .expect('Content-Type', /json/)
+                .expect('Cache-Control', testUtils.cacheRules.private)
+                .expect(202);
+            assert.equal(res.headers['x-cache-invalidate'], undefined);
+            const jsonResponse = res.body;
 
-        assertExists(jsonResponse);
-        assertExists(jsonResponse.meta);
+            assertExists(jsonResponse);
+            assertExists(jsonResponse.meta);
 
-        // Wait for the job to finish
-        await awaitCompletion;
+            // Wait for the job to finish
+            await awaitCompletion;
 
-        assert.equal(settingsCache.get('email_verification_required'), true, 'Email verification should now be required');
+            assert.equal(settingsCache.get('email_verification_required'), true, 'Email verification should now be required');
 
-        assert.equal(receivedWebhookRequests.length, 1, 'Expected to receive webhook requests');
+            assert.equal(receivedWebhookRequests.length, 1, 'Expected to receive webhook requests');
 
-        const secondImport = await request
-            .post(localUtils.API.getApiQuery(`members/upload/`))
-            .field('labels', ['new-global-label'])
-            .attach('membersfile', path.join(__dirname, '/../../../utils/fixtures/csv/valid-members-import-large.csv'))
-            .set('Origin', config.get('url'))
-            .expect('Content-Type', /json/)
-            .expect('Cache-Control', testUtils.cacheRules.private)
-            .expect(201);
-        assert.equal(secondImport.headers['x-cache-invalidate'], undefined);
-        const secondJsonResponse = secondImport.body;
+            const secondImport = await request
+                .post(localUtils.API.getApiQuery(`members/upload/`))
+                .field('labels', ['new-global-label'])
+                .attach('membersfile', path.join(__dirname, '/../../../utils/fixtures/csv/valid-members-import-large.csv'))
+                .set('Origin', config.get('url'))
+                .expect('Content-Type', /json/)
+                .expect('Cache-Control', testUtils.cacheRules.private)
+                .expect(201);
+            assert.equal(secondImport.headers['x-cache-invalidate'], undefined);
+            const secondJsonResponse = secondImport.body;
 
-        assertExists(secondJsonResponse);
-        assertExists(secondJsonResponse.meta);
-        assertExists(secondJsonResponse.meta.stats);
+            assertExists(secondJsonResponse);
+            assertExists(secondJsonResponse.meta);
+            assertExists(secondJsonResponse.meta.stats);
 
-        assert.equal(secondJsonResponse.meta.stats.imported, 10);
-        assert.equal(secondJsonResponse.meta.stats.invalid.length, 0);
+            assert.equal(secondJsonResponse.meta.stats.imported, 10);
+            assert.equal(secondJsonResponse.meta.stats.invalid.length, 0);
 
-        assert.equal(settingsCache.get('email_verification_required'), true, 'Email verification should still be required');
+            assert.equal(settingsCache.get('email_verification_required'), true, 'Email verification should still be required');
 
-        // Don't send another email
-        assert.equal(receivedWebhookRequests.length, 1, 'Expected no further webhook requests after second import');
-
-        // reset email verification required flag for next test
-        await restoreEmailVerificationUtils();
+            // Don't send another email
+            assert.equal(receivedWebhookRequests.length, 1, 'Expected no further webhook requests after second import');
+        } finally {
+            await restoreEmailVerificationUtils();
+        }
     });
 
     it('Can import members with host emailVerification limits for large imports', async function () {
-        // If this test fails, check if the total members that have been created with fixtures has increased a lot, and if required, increase the amount of imported members
-        const {receivedWebhookRequests} = await setupEmailVerificationUtils({
-            apiThreshold: 2,
-            adminThreshold: 2,
-            importThreshold: 1 // note: this one isn't really used because (totalMembers - members_created_in_last_30_days) is larger and used instead
-        });
+        try {
+            // If this test fails, check if the total members that have been created with fixtures has increased a lot, and if required, increase the amount of imported members
+            const {receivedWebhookRequests} = await setupEmailVerificationUtils({
+                apiThreshold: 2,
+                adminThreshold: 2,
+                importThreshold: 1 // note: this one isn't really used because (totalMembers - members_created_in_last_30_days) is larger and used instead
+            });
 
-        assert.equal(settingsCache.get('email_verification_required'), false, 'Email verification should not be required');
+            assert.equal(settingsCache.get('email_verification_required'), false, 'Email verification should not be required');
 
-        const awaitCompletion = jobManager.awaitCompletion('members-import');
+            const awaitCompletion = jobManager.awaitCompletion('members-import');
 
-        const res = await request
-            .post(localUtils.API.getApiQuery(`members/upload/`))
-            .field('labels', ['new-global-label'])
-            .attach('membersfile', path.join(__dirname, '/../../../utils/fixtures/csv/valid-members-import-large-501.csv'))
-            .set('Origin', config.get('url'))
-            .expect('Content-Type', /json/)
-            .expect('Cache-Control', testUtils.cacheRules.private)
-            .expect(202);
-        assert.equal(res.headers['x-cache-invalidate'], undefined);
-        const jsonResponse = res.body;
+            const res = await request
+                .post(localUtils.API.getApiQuery(`members/upload/`))
+                .field('labels', ['new-global-label'])
+                .attach('membersfile', path.join(__dirname, '/../../../utils/fixtures/csv/valid-members-import-large-501.csv'))
+                .set('Origin', config.get('url'))
+                .expect('Content-Type', /json/)
+                .expect('Cache-Control', testUtils.cacheRules.private)
+                .expect(202);
+            assert.equal(res.headers['x-cache-invalidate'], undefined);
+            const jsonResponse = res.body;
 
-        assertExists(jsonResponse);
-        assertExists(jsonResponse.meta);
+            assertExists(jsonResponse);
+            assertExists(jsonResponse.meta);
 
-        // Wait for the job to finish
-        await awaitCompletion;
+            // Wait for the job to finish
+            await awaitCompletion;
 
-        assert.equal(settingsCache.get('email_verification_required'), true, 'Email verification should now be required');
+            assert.equal(settingsCache.get('email_verification_required'), true, 'Email verification should now be required');
 
-        mockManager.assert.sentEmail({
-            subject: 'Your member import is complete'
-        });
+            mockManager.assert.sentEmail({
+                subject: 'Your member import is complete'
+            });
 
-        assert.equal(receivedWebhookRequests.length, 1, 'Expected to receive webhook requests');
-
-        await restoreEmailVerificationUtils();
+            assert.equal(receivedWebhookRequests.length, 1, 'Expected to receive webhook requests');
+        } finally {
+            await restoreEmailVerificationUtils();
+        }
     });
 });
